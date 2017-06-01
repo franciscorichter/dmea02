@@ -1,0 +1,37 @@
+---
+title: "dmeav02 Usage"
+author: "Francisco Richter M."
+date: "June 1, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dmea02)
+```
+
+
+## tree simulation and consistency 
+
+functions
+
+1. ```sim.tree``` to simulate trees
+2. ```phylo2vectors``` to convert a phylo into the set of vectors characterizing the tree
+
+```{r}
+s = sim.tree(ct=6)
+plot(s$phylo)
+s$tree
+phylo2vectors(s$phylo)
+all.equal(s$tree$wt,phylo2vectors(s$phylo)$wt)
+all.equal(s$tree$E,phylo2vectors(s$phylo)$E)
+all.equal(s$tree$n,phylo2vectors(s$phylo)$n)
+```
+
+
+to do: 
+
+1. ```phylo2vectors```does not give the vector S corresponding to topology. add it
+2. remove the root on vector outputs, keep consistency 
+3. arenge the vectors2phylo function and make a lot simpler the ```sim.tree``` using it
+4. add the log in an log output file
