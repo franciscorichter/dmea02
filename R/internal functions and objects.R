@@ -19,6 +19,8 @@ for (i in 2:26){
   SL = c(SL,ll)
 }
 sl=c(sl,SL,S1,s1)
+
+#functions
 compphyl <- function(newi,identf,ct){
   #set to extant species to the present time
   identf[,1] = as.character(identf[,1])
@@ -30,3 +32,37 @@ compphyl <- function(newi,identf,ct){
   return(newi)
 }
 
+drop.fossil <- function (phy, tol = 1e-08)
+{
+  p = phylo2vectors(phy)
+  ct = sum(p$wt)
+  n <- Ntip(phy)
+  x <- dist.nodes(phy)[n + 1, ][1:n]
+  dphy = drop.tip(phy, root.edge = T , which(x < max(x) - tol))
+  if(Ntip(dphy)>2){
+    p2 = phylo2vectors(dphy)
+    if(sum(p2$wt) != ct){
+      rem_time = ct - sum(p2$wt)
+      p2$wt[1] = p2$wt[1] + rem_time
+      dphy = vectors2phylo(p2)
+    }
+  }
+  return(dphy)
+}
+
+#experiments
+sim.est <- function(n_trees, pars, init_par=c(1.8,0.13,60), seed=0, ct=15, parallel=F){ # simulate a tree, drop fossil, and estimate parameters back after bootstrap reconstruction
+  if (seed != 0) set.seed(seed)
+  s = sim.tree(lambda0 = pars[1], mu0 = pars[2], K = pars[3], ct=ct)
+  st = s$tree
+  p <- mle.tree(st)
+  sit = s$tree.extant
+  trees = sim.srt(tree=sit, pars=p, parallel = parallel, n_trees = n_trees)
+  pars = mle.st(trees)
+  return(data.frame(real=p, est=pars))
+}
+
+get.time <- function(time){
+  dif = proc.time()-time
+  return(dif[3])
+}

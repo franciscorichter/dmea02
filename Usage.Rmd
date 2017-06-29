@@ -35,3 +35,69 @@ to do:
 2. remove the root on vector outputs, keep consistency 
 3. arenge the vectors2phylo function and make a lot simpler the ```sim.tree``` using it
 4. add the log in an log output file
+
+### Tree manipulation
+
+```{r}
+s = sim.tree(ct=2,seed=5)
+plot(s$phylo)
+s2=phylo2vectors(s$phylo)
+s2
+s$tree
+up = update.tree(s2,0.5,1.5)
+up
+```
+
+1. Doing update tree I realized that I should be more carefully in analysis when we lost crown time.
+2. phylo2vectors really needs to take into account topology
+
+
+#### more about consistency
+
+```{r}
+s <- sim.tree()
+plot(s$phylo)
+plot(vectors2phylo(s$tree))
+all.equal(s$phylo,vectors2phylo(s$tree))
+```
+
+## The reconstruction algorithm
+
+```{r}
+s = sim.tree(ct=6)
+plot(s$phylo.extant)
+rec = rec.tree(tree=s$tree.extant,pars=c(0.8,0.1,40))
+plot(vectors2phylo(rec))
+s$tree.extant
+rec
+```
+
+### let´s observe one estimation
+```{r, sim1}
+s = sim.tree(seed = 1)
+tree = s$tree.extant
+st = sim.srt(tree,pars=c(0.8,0.1,40),n_trees=100)
+mle.st(st)
+
+```
+
+
+### How good is the last iteration of the MCEM algorithm?
+
+```{r, eval=FALSE}
+library(dmea)
+n_sim = 537
+n_trees = 10
+MP = matrix(nrow=n_sim,ncol=3)
+RP = matrix(nrow=n_sim,ncol=3)
+p = proc.time()
+for(i in 1:n_sim){
+  est = sim.est(n_trees=n_trees,pars=c(0.8,0.1,40),seed=i)
+  RP[i,] = est$real
+  MP[i,] = est$est
+}
+print(proc.time()-p)
+par_est_vis(P=MP,par=1,PR=RP)
+par_est_vis(P=MP,par=2,PR=RP)
+par_est_vis(P=MP,par=3,PR=RP)
+```

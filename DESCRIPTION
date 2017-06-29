@@ -10,4 +10,7 @@ LazyData: TRUE
 Depends:
     ape,
     subplex,
-    ggplot2
+    ggplot2,
+    truncdist,
+    doParallel,
+    foreach
