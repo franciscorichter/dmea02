@@ -1,0 +1,33 @@
+---
+title: "importance sampling"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+library(dmea02)
+```
+
+```{r}
+n_it = 10000
+dims = vector(mode = 'numeric',length = n_it)
+dims_r = vector(mode = 'numeric',length = n_it)
+s <- sim.tree(mu0 = 0.1)
+true_dim = length(s$tree$wt)
+probs = NULL
+trees = vector('list',length=n_it)
+for(i in 1:n_it){
+  rec = rec.tree(s$tree.extant,pars=c(0.8,0.1,40))
+  trees[[i]] = rec
+  probs[i] = rec$prob
+}
+
+liks = NULL
+for(i in 1:n_it){
+  liks[i] = llik(tree=trees[[i]],pars=c(0.8,0.1,40))
+}
+
+weights = exp(-liks[-which(liks>999)] - probs[-which(liks>999)]-(max(-liks[-which(liks>999)] - probs[-which(liks>999)])))
+#weights = weights/max(weights)
+plot(weights)
+```  

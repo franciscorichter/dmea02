@@ -1,4 +1,5 @@
-rec.tree <- function(tree,pars,model='dd'){
+rec.tree <- function(tree,pars,model='dd',seed=0){
+  if(seed>0) set.seed(seed)
   wt = tree$wt
   ct = sum(wt)
   lambda0=pars[1]
@@ -14,7 +15,8 @@ rec.tree <- function(tree,pars,model='dd'){
   cbt = 0
   N = 1
   nm= 0 # number of missing species
-  prob = 0
+  prob = NULL
+  gprob=0 # gost probability
   for(i in 1:dim){
     rs = rs-1
     cwt = wt[i]
@@ -36,7 +38,6 @@ rec.tree <- function(tree,pars,model='dd'){
       }
       else{
         t.spe = rexp(1,s)  # waiting time of iteration i
-        probs = dexp(x = t.spe,rate = s,log = TRUE)
       }
       if(nm > 0){ # if there are missing species
         t.ext = NULL
@@ -45,7 +46,6 @@ rec.tree <- function(tree,pars,model='dd'){
         }
         extinctedone = which(t.ext == min(t.ext))
         t.ext = min(t.ext)
-        probe = dtrunc(x=t.ext,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu,log=TRUE)
       }
       else{
         t.ext = Inf
@@ -56,28 +56,22 @@ rec.tree <- function(tree,pars,model='dd'){
       mint = min(t.spe,t.ext)
       if(mint < cwt){
         if(mint == t.spe){#speciation
-
           acep = runif(1)
           thre = pexp(ct-cbt,mu)
           if(acep < thre){
             ms = c(ms,cbt+t.spe)
-            prob = prob + probs + thre + dists(wt = cwt, lambda=lambda[-1],mu = rep(mu0,nm),b = e.lims,log = TRUE)
             nm = nm + 1 # number of missing species
             if((N + rs-1) < limit){
               e.lims = c(e.lims,ct)
             }
             else{
-              e.lims = c(e.lims,sum(wt[1:(dim + (floor(limit)-(N+rs-1)))]))
+              e.lims = c(e.lims,sum(wt[1:(dim - (N+rs-floor(limit)-1))])) # cual es la interpretacion de esta formula?
             }
             N = N+1
+            #print(paste('at branching time',cbt+t.spe,'a missing species arises, resulting on',N,'current species, happening before the current waiting time',cwt))
           }
-          else{
-            prob = prob + probs + (1-thre) + dists(wt = cwt, lambda=lambda[-1],mu = rep(mu0,nm),b = e.lims,log = TRUE)
-          }
-
           cwt = cwt - t.spe
           cbt = cbt + t.spe
-
         }
         else{#extinction
           pickone = sample(1:nm,1)
@@ -90,12 +84,10 @@ rec.tree <- function(tree,pars,model='dd'){
           N = N-1
           nm = nm - 1
           e.lims = e.lims[-extinctedone]
-          prob = prob + probe  + dists(wt = cwt,lambda = lambda,mu = rep(mu0,nm),b = e.lims,log = TRUE)
-        }
+         }
       }
       else{
-        prob = prob + dists(wt = cwt, lambda=lambda,mu = rep(mu0,nm),b = e.lims,log = TRUE)
-        key = 1
+         key = 1
       }
     }
     N= N+1
@@ -113,9 +105,10 @@ dists <- function(wt,lambda,mu=NULL,b=NULL,log=FALSE){
     product = 1
   }
   else{
-    product = prod((exp(-wt*mu)-exp(-wt*b))/(1-exp(-mu*b)))
+    product = prod((exp(-wt*mu)-exp(-mu*b))/(1-exp(-mu*b)))
   }
   prob = exp(-wt*s)*product
+  if(prob>1) print('prob grater than 1???')
   if(log){
     prob = log(prob)
   }
