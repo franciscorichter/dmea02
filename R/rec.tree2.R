@@ -38,6 +38,9 @@ rec.tree2 <- function(tree,pars,model='dd',seed=0){
         t.spe = Inf
       }
       else{
+        # calculate F(Delta t)
+        maxprob = pmiss(t=cwt,s = s,mu = mu,r = (ct-cbt))
+        print(maxprob)
         t.spe = rexp(1,s)  # waiting time of iteration i
         probs = dexp(x = t.spe,rate = s,log = TRUE)
         if(probs>0){
@@ -140,3 +143,4 @@ dists <- function(wt,lambda,mu=NULL,b=NULL,log=FALSE){
   }
   return(prob)
 }
+

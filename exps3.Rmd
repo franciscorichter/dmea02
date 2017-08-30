@@ -1,0 +1,70 @@
+---
+title: "el ultimo de los exponenciales"
+author: "Francisco Richter M."
+date: "July 15, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plyr)
+require(vcd)
+require(MASS)
+require(nloptr)
+```
+
+## R Markdown
+
+```{r}
+GammaNLL <- function(pars, data){
+  alpha <- pars[[1]]
+  theta <- pars[[2]]
+  return (-sum(dgamma(data, shape = alpha, rate = theta, log = TRUE)))
+}
+```
+
+
+```{r cars}
+M = 0.2
+n_it = 10000
+chains = vector(mode = 'list', length = n_it)
+res = vector(mode = 'numeric', length = n_it)
+rem = vector(mode = 'numeric', length = n_it)
+rate = 6
+for(i in 1:n_it){
+  sum = 0 
+  v = NULL
+  j=0
+  while(sum < M){
+    j=j+1
+    re = rexp(1,rate = rate)
+    Rem = M-sum
+    sum = sum + re
+    v[j] = re
+  }
+  chains[[i]] = v
+  res[i] = re
+  rem[i] = Rem
+}
+count(as.numeric(summary(chains)[,1]))
+hist(res)
+fit1 <- fitdistr(res, "exponential")
+fit1
+ks.test(res, "pexp", fit1$estimate)
+hist(res, freq = FALSE, breaks = 100)#, xlim = c(0, quantile(sss1, 0.99)))
+curve(dexp(x, rate = fit1$estimate), col = "red", add = TRUE)
+fit1 <- fitdistr(rem, "exponential")
+fit1
+ks.test(rem, "pexp", fit1$estimate)
+hist(rem, freq = FALSE, breaks = 100)#, xlim = c(0, quantile(sss1, 0.99)))
+curve(dexp(x, rate = fit1$estimate), col = "red", add = TRUE)
+Fit <- nloptr(x0 = c(2,2), eval_f = GammaNLL, lb = c(0,0), data = res,
+              opts = list(algorithm = "NLOPT_LN_SBPLX", maxeval = 1e5))
+Fit
+Fit$solution
+hist(res, freq = FALSE, breaks = 100)#, xlim = c(0, quantile(sss1, 0.99)))
+curve(dgamma(x, shape= Fit$solution[1],rate = Fit$solution[2]), col = "red", add = TRUE)
+```
+
+
+

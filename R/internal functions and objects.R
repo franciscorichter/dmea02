@@ -66,3 +66,23 @@ get.time <- function(time){
   dif = proc.time()-time
   return(dif[3])
 }
+
+
+inverse = function (f, lower = -100, upper = 100) {
+  function (y) uniroot((function (x) f(x) - y), lower = lower, upper = upper)[1]
+}
+
+pms <- function(t,sumspec,mu,rem){
+  pms = sumspec*exp(-sumspec*t)*(1-exp(-(rem-t)*mu))
+  return(pms)
+}
+
+sumspec = 10
+remt=5
+mu = 0.1
+pms2 <- function(t){
+  return(pms(t,sumspec=sumspec,mu=mu,rem=remt))
+}
+missspec <- inverse(pms2, lower = 0, upper = 1)
+missspec(0.2)
+

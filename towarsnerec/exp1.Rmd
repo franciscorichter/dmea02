@@ -1,0 +1,218 @@
+---
+title: "preliminary experiments for new reconstruction"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+library(subplex)
+library(ggplot2)
+library(plyr)
+require(vcd)
+require(MASS)
+```
+
+
+# functions
+
+```{r}
+funcionbonita <- function(pars=c(0.8),sumexp){
+  sumt = 0
+  exps=NULL
+  i = 0
+  N=1
+  rate = pars[1]
+  while(sumt < sumexp){
+    i = i+1
+    # - 0.01#- ((pars[1]-pars[2])/pars[3])*N
+    re = rexp(1,rate = rate)
+    sumt = sumt + re
+    exps[i] = re
+    N = N + 1
+  }
+  
+  return(exps)
+}
+
+srec <- function(pars=c(0.8),sumexp){
+  sumt = 0
+  exps=NULL
+  i = 0
+  N=1
+  rate = pars[1]
+  while(sumt < sumexp){
+    i = i+1
+    #rate = rate - 0.01#- ((pars[1]-pars[2])/pars[3])*N
+    re = rexp(1,rate = rate)
+    sumt = sumt + re
+    exps[i] = re
+    N = N + 1
+  }
+  return(exps)
+}
+
+
+smalltree <- function(pars=c(0.8),n=1){
+  exps = NULL  
+  N=1
+  rate = pars[1]
+  for(i in 1:n){
+    #rate = rate# -0.01 #- ((pars[1]-pars[2])/pars[3])*N
+    re = rexp(1,rate = rate)
+    exps[i] = re
+    N = N + 1
+  }
+  return(exps)
+}
+
+sllik <- function(pars,data){
+  sum = 0
+  for(i in 1:length(data)){
+    v = data[[i]]
+    N = 1
+    rate = pars[1]
+    for(j in 1:length(v)){
+      #rate = rate# - 0.01# - ((pars[1]-pars[2])/pars[3])*N
+      sum = sum + dexp(v[j],rate = rate,log = TRUE)
+      N = N+1
+    }
+  }
+  return(-sum)
+}
+
+```
+
+# exp 0. 
+## remaining times
+
+```{r, sim0}
+n=48
+ s = smalltree(n=n,pars = 3)
+ ss = sum(s)
+ #ss=1
+ n_it = 10000
+ vals = vector(mode = 'list',length = n_it)
+ sss1 = vector('numeric',n_it)
+ s2 = vector('numeric',n_it)
+ sc = vector('numeric',n_it)
+ for(i in 1:n_it){
+   v = srec(sumexp = ss,pars=3)
+   sss1[i] = ss-sum(v[-length(v)])
+   s2[i] = v[length(v)]
+   sc[i] = v[(length(v)-1)]
+ }
+ summary(sss1)
+ summary(s2)
+ qplot(sss1,geom='histogram')
+ qplot(s2,geom='histogram')
+fit1 <- fitdistr(sss1, "exponential")
+fit2 <- fitdistr(s2, "exponential")
+fitc <- fitdistr(sc, "exponential")
+fit1
+fit2
+fitc
+ks.test(sss1, "pexp", fit1$estimate)
+ks.test(s2, "pexp", fit2$estimate)
+ks.test(sc, "pexp", fitc$estimate)
+hist(sss1, freq = FALSE, breaks = 100, xlim = c(0, quantile(sss1, 0.99)))
+curve(dexp(x, rate = fit1$estimate), col = "red", add = TRUE)
+hist(s2, freq = FALSE, breaks = 100, xlim = c(0, quantile(s2, 0.99)))
+curve(dexp(x, rate = fit2$estimate), col = "red", add = TRUE)
+qplot(s2,sss1)
+```
+
+```{r, sim01}
+ s = smalltree(n=n)
+ ss = sum(s)
+ n_it = 10000
+ vals = vector(mode = 'list',length = n_it)
+ sss1 = vector('numeric',n_it)
+ sss0 = vector('numeric',n_it)
+ for(i in 1:n_it){
+   v = srec(sumexp = ss)
+   vals[[i]] = c(v[-length(v)],ss-v[length(v)-1])
+   sss1[i] = sum(v)
+   sss0[i] = sum(v[-length(v)])
+ }
+ count(as.numeric(summary(vals)[,1]))
+ summary(sss1-ss)
+ summary(ss-sss0)
+ m = pmin(sss1-ss,ss-sss0)
+ true = m == (sss1-ss) 
+ m[true] = -m[true]
+ qplot(m,geom='histogram')
+```
+
+
+# exp 1. 
+## simulation the trees
+
+```{r}
+exp1 <- function(n,thre,it=100){
+ps = NULL
+for(h in 1:it){
+ s = smalltree(n=n)
+ ss = sum(s)
+ n_it = 10000
+ vals = vector(mode = 'list',length = n_it)
+ sss1 = vector('numeric',n_it)
+ sss0 = vector('numeric',n_it)
+ for(i in 1:n_it){
+   v = funcionbonita(sumexp = ss)
+   vals[[i]] = c(v[-length(v)],ss-v[length(v)-1])
+   sss1[i] = sum(v)
+   sss0[i] = sum(v[-length(v)])
+ }
+ #count(as.numeric(summary(vals)[,1]))
+ #summary(sss1)
+ #summary(sss0)
+ #summary(sss1-ss)
+ #summary(ss-sss0)
+ m = pmin(sss1-ss,ss-sss0)
+ true = m == (sss1-ss) 
+ m[true] = -m[true]
+
+
+ #qplot(m,geom='histogram')
+
+ ## estimation 
+
+ st = which(abs(m)>thre)
+ v2 = vals
+ v2[st] = NULL
+ p = subplex(par = c(4), fn = sllik, data=v2)$par
+ ps[h] = p
+}
+return(ps)
+}
+```
+
+```{r, n3}
+time=proc.time()
+ps = exp1(3,thre=10)
+print(proc.time()-time)
+summary(ps)
+time=proc.time()
+ps = exp1(3,thre=0.2)
+summary(ps)
+print(proc.time()-time)
+time=proc.time()
+ps = exp1(3,thre=0.05)
+summary(ps)
+print(proc.time()-time)
+```
+
+```{r, n10}
+time=proc.time()
+ps = exp1(10,thre=10)
+print(proc.time()-time)
+summary(ps)
+time=proc.time()
+ps = exp1(10,thre=0.2)
+summary(ps)
+print(proc.time()-time)
+time=proc.time()
+ps = exp1(10,thre=0.05)
+summary(ps)
+print(proc.time()-time)
+```

@@ -1,0 +1,58 @@
+---
+title: "importance samplinf plus more"
+author: "Francisco Richter M."
+date: "July 21, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+library(dmea02)
+```
+
+## Imp Samp
+
+```{r cars}
+s = sim.tree()
+mle.tree(s$tree)
+tree = s$tree.extant
+nt = 1000
+W = vector(mode = 'numeric',length = nt)
+W2 = vector(mode = 'numeric',length = nt)
+R = vector(mode = 'list',length = nt)
+mu = vector(mode = 'numeric',length = nt)
+D = vector(mode = 'numeric',length = nt)
+for(i in 1:nt){
+  rec = rec.tree(tree,pars = c(0.8,0.1,40))
+  R[[i]] = rec
+  mu[i] = mle.tree(rec)[2]
+  W[i] = rec$weight
+  W2[i] = exp(sum(log(rec$rprob)-log(rec$sprob)))
+  D[i] = length(rec$wt)
+}
+
+
+
+plot(1:nt,W/max(W))
+plot(1:nt,W2/max(W2))
+plot(D,mu)
+
+Rp = vector(mode = 'numeric',length = nt)
+Sp = vector(mode = 'numeric',length = nt)
+Prop = vector(mode = 'numeric',length = nt)
+for(i in 1:nt){
+  rec = R[[i]] 
+  Rp[i] = prod(rec$rprob)
+  Sp[i] = prod(rec$sprob)
+  Prop[i] = sum(rec$rprob>rec$sprob)/length(rec$rprob)
+}
+summary(D)
+D[which(W2==max(W2))]
+plot(D,W)
+plot(D,W2)
+plot(D,log(Rp)-log(Sp))
+plot(log(Rp),log(Sp))
+which(max(Rp)==Rp)
+which(max(Sp)==Sp)
+```
+

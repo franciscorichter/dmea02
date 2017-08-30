@@ -30,9 +30,9 @@ for(i in 1:n_sim){
 
 
 ```{r}
-dmea::par_est_vis(P=MP,par=1,PR=RP)
-dmea::par_est_vis(P=MP,par=2,PR=RP)
-dmea::par_est_vis(P=MP,par=3,PR=RP)
+dmea::par_est_vis(P=MP,par=1,PR=RP,true=0.8)
+dmea::par_est_vis(P=MP,par=2,PR=RP,true=0.1)
+dmea::par_est_vis(P=MP,par=3,PR=RP,true=40)
 ```
 
 ```{r}
@@ -60,9 +60,9 @@ get.time(time)
 
 ```{r}
 get.time(time)
-dmea::par_est_vis(P=MP,par=1,PR=RP)
-dmea::par_est_vis(P=MP,par=2,PR=RP)
-dmea::par_est_vis(P=MP,par=3,PR=RP)
+dmea::par_est_vis(P=MP,par=1,PR=RP,true=0.8)
+dmea::par_est_vis(P=MP,par=2,PR=RP,true=0.2)
+dmea::par_est_vis(P=MP,par=3,PR=RP,true=40)
 summary(MP)
 summary(RP)
 ```
@@ -87,9 +87,9 @@ get.time(time)
 
 ```{r}
 get.time(time)
-dmea::par_est_vis(P=MP,par=1,PR=RP)
-dmea::par_est_vis(P=MP,par=2,PR=RP)
-dmea::par_est_vis(P=MP,par=3,PR=RP)
+dmea::par_est_vis(P=MP,par=1,PR=RP,true=0.8)
+dmea::par_est_vis(P=MP,par=2,PR=RP,true=0.4)
+dmea::par_est_vis(P=MP,par=3,PR=RP,true=40)
 summary(MP)
 summary(RP)
 ```
@@ -114,9 +114,9 @@ get.time(time)
 
 
 ```{r}
-dmea::par_est_vis(P=MP,par=1,PR=RP)
-dmea::par_est_vis(P=MP,par=2,PR=RP)
-dmea::par_est_vis(P=MP,par=3,PR=RP)
+dmea::par_est_vis(P=MP,par=1,PR=RP,true=0.8)
+dmea::par_est_vis(P=MP,par=2,PR=RP,true=0.1)
+dmea::par_est_vis(P=MP,par=3,PR=RP,true=40)
 ```
 
 ```{r}
@@ -127,7 +127,7 @@ summary(RP)
 
 ### more trees 
 
-```{r, exp40}
+```{r, exp40,eval=F}
 time = proc.time()
 n_sim = 1000
 n_trees = 100
