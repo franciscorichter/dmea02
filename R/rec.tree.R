@@ -17,7 +17,10 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
   nm= 0 # number of missing species
   rprob = NULL # true probability of Missing|observed
   sprob = NULL # sampling probability of Missing|observed
+  et = NULL # event type
   h = 1
+  dif1 = vector(mode = 'numeric',length = dim)
+  dif2 = vector(mode = 'numeric', length = dim)
   for(i in 1:dim){
     rs = rs-1
     cwt = wt[i]
@@ -38,28 +41,12 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
         t.spe = Inf
       }
       else{
-        # calculate F(Delta t)
-        maxprob = pmiss(t=cwt,s = s,mu = mu,r = (ct-cbt))
-        specp = runif(1)
-#
-        if(maxprob>specp){
-#          t.spe = rexp(specp,rate=s)
-          t.spe = uniroot(f = pmiss, s = s, mu = mu, r = (ct-cbt), shift = specp, lower = 0, upper = cwt)$root  # waiting time of iteration i
-         # print(paste('speciation at',t.spe))
-        }else{
-          t.spe = 99999999
-        #t.spe = rexp(1,s)
-        #prob = pmiss(t=cwt,s = s,mu = mu,r = (ct-cbt))
-        #unif = runif(1)
-        #if(prob > unif){
-        #  t.spe = 9999999999
-        }
+        t.spe = rexp(1,s)
       }
       if(nm > 0){ # if there are missing species
         t.ext = vector(mode = 'numeric',length = nm)
         for(j in 1:nm){
           t.ext[j] = rtrunc(1,'exp',a=0,b=(e.lims[j]-cbt),rate=mu)
-          #probs[j] = 1 - ptrunc()
         }
         extinctedone = which(t.ext == min(t.ext))
         t.ext = min(t.ext)
@@ -80,13 +67,17 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
       else{probs = 1}
       if(mint < cwt){
         if(mint == t.spe & mint != t.ext){#speciation
-#          acep = runif(1)
-#          thre = pexp(ct-cbt,mu)
-#          if(acep < thre){
+          acep = runif(1)
+          thre = pexp(ct-cbt,mu)
+          if(acep < thre){
             ms = c(ms,cbt+t.spe)
             rprob[h] = dexp(x = t.spe, rate = (s+nm*mu))*(lambda[1]/(s+nm*mu))
-            sprob[h] = prod(probs)*dexp(x = t.spe, rate = (s+nm*mu))*(lambda[1]/(s+nm*mu))
+            sp = sampprob(t = mint,s = s,mu = mu,r = ct-cbt)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
+            sprob[h] = prod(probs)*sp
+            et[h] = 'speciation'
             #print(paste('spec',sprob[h]))
+            #print(paste('prod(probs)',prod(probs),'sampprob',sp))
+            #print(paste('sampprob',sampprob(t = mint,s = s,mu = mu,r = ct-cbt),'integrate',integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value))
             h = h + 1
             nm = nm + 1 # number of missing species
             if((N + rs-1) < limit){
@@ -97,7 +88,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
             }
             N = N+1
             #print(paste('at branching time',cbt+t.spe,'a missing species arises, resulting on',N,'current species, happening before the current waiting time',cwt))
-          #}
+          }
           cwt = cwt - t.spe
           cbt = cbt + t.spe
         }
@@ -107,13 +98,17 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
           t_ext = cbt + t.ext
           tree = update.tree(tree,t_spe=t_spe,t_ext=t_ext)
           rprob[h] = dexp(x = mint, rate = (s+nm*mu))*(mu0/(s+nm*mu0))
+          et[h] = 'extinction'
           probs = probs[-extinctedone]
-          sprob[h] = prod(probs)*dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)*pexp(mint,rate = s,lower.tail = FALSE)*(mu0/(s+nm*mu0))
+          sprob[h] = prod(probs)*dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)*(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)
           ms = ms[-pickone]
           cwt = cwt - t.ext
           cbt = cbt + t.ext
           N = N-1
           #print(paste('ext',sprob[h]))
+          #print(paste('probs',prod(probs),'trunc',dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu),'1-int',(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)))
+          #print(paste('INTEGRATETRUNCA',integrate(dtrunc,lower = 0, upper = (e.lims[extinctedone]-cbt),spec='exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)$value))
+          #print(paste('b',(e.lims[extinctedone]-cbt)))
           h = h+1
           nm = nm - 1
           e.lims = e.lims[-extinctedone]
@@ -122,16 +117,24 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
       else{
          key = 1
          rprob[h] = pexp(q = cwt, rate = (s+nm*mu0),lower.tail = FALSE)
-         sprob[h] = prod(probs)*pexp(cwt,rate = s,lower.tail = FALSE)
+         et[h] = 'nothing'
+         sprob[h] = 1 - integrate(sampprob,lower = 0, upper = cwt,s=s,mu=mu,r=ct-cbt)$value#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
          #print(paste('nothing',sprob[h]))
          h = h+1
+         dif1[i] = cwt/wt[i]
+         dif2[i] = (mint - cwt)/wt[i]
       }
     }
     N= N+1
   }
   tree$rprob = rprob
   tree$sprob = sprob
-  tree$weight = prod(rprob)/prod(sprob)
+  tree$et = et
+  #tree$weight = prod(rprob)/prod(sprob)
+  logweight = log(rprob)-log(sprob)
+  tree$weight = sum(logweight) #logweight
+  tree$dif1 = dif1
+  tree$dif2 = dif2
   return(tree)
 }
 
@@ -156,4 +159,12 @@ dists <- function(wt,lambda,mu=NULL,b=NULL,log=FALSE){
     prob = log(prob)
   }
   return(prob)
+}
+
+
+sampprob <- function(t,s,mu,r){
+  term1 = s*(1-exp(-mu*(r-t)))
+  c = exp(-(s/mu)*exp(-mu*r))
+  f = term1*exp(-s*t)*c^{-exp(mu*t)}*c
+  return(f)
 }

@@ -1,0 +1,23 @@
+---
+title: "What happened there?"
+author: "Francisco Richter M."
+date: "September 9, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dmea02)
+```
+
+## Questions
+
+1. How many 'things' happened on $\Delta t$?
+2. When that many things happened?
+```{r}
+s <- sim.tree(seed=4,ct=7)
+plot(s$phylo,root.edge=T)
+plot(s$phylo.extant,root.edge=T)
+s$tree$wt
+s$tree.extant$wt
+```
