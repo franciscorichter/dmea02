@@ -1,0 +1,209 @@
+---
+title: "What happened there?"
+author: "Francisco Richter M."
+date: "September 9, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+library(dmea02)
+library(plyr)
+```
+
+## Questions
+
+1. How many 'things' happened on $\Delta t$?
+2. When that many things happened?
+```{r}
+s <- sim.tree(seed=4,ct=7)
+plot(s$phylo,root.edge=T)
+plot(s$phylo.extant,root.edge=T)
+s$tree$wt
+s$tree.extant$wt
+```
+
+now, let´s reconstruct the first segment...
+
+```{r}
+Dt = s$tree.extant$wt[1]+2
+subrec <- function(Dt){
+N=1
+K=40
+lambda0=0.8
+mu0=0.1
+cwt = Dt
+cbt = 0
+times = NULL
+key = 0 
+nm=0
+ct = 15
+ms = NULL
+rprob = NULL
+sprob = NULL
+h=1
+et = NULL
+rs = 6
+e.lims = NULL
+
+while(key == 0){
+      lambda = max(0,lambda0 - (lambda0-mu0)*N/K)
+      mu = mu0
+      lambda = rep(lambda,N)
+
+      s = sum(lambda)
+      t.spe = rexp(1,s)
+      if(nm > 0){ # if there are missing species
+        t.ext = vector(mode = 'numeric',length = nm)
+        for(j in 1:nm){
+          t.ext[j] = rtrunc(1,'exp',a=0,b=3,rate=mu)
+        }
+        extinctedone = which(t.ext == min(t.ext))
+        t.ext = min(t.ext)
+      }
+      else{
+        t.ext = Inf
+      }
+      if(t.ext ==Inf & t.spe == Inf){
+        print('try another K!')
+      }
+      mint = min(t.spe,t.ext)
+      if(nm > 0){
+        probs = vector(mode = 'numeric',length = nm)
+        for(j in 1:nm){
+          probs[j] = 1-ptrunc(mint,'exp',a=0,b=3,rate=mu)
+        }
+      }
+      else{probs = 1}
+      if(mint < cwt){
+        if(mint == t.spe & mint != t.ext){#speciation
+          acep = runif(1)
+          thre = pexp(ct-cbt,mu)
+          if(acep < thre){
+            ms = c(ms,cbt+t.spe)
+            rprob[h] = dexp(x = t.spe, rate = (s+nm*mu))*(lambda[1]/(s+nm*mu))
+            sp = sampprob(t = mint,s = s,mu = mu,r = ct-cbt)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
+            sprob[h] = prod(probs)*sp
+            et[h] = 'speciation'
+            times[h] = t.spe
+            h = h + 1
+            nm = nm + 1 # number of missing species
+            e.lims = c(e.lims,ct)
+            N = N+1
+          }
+          cwt = cwt - t.spe
+          cbt = cbt + t.spe
+        }
+        else{#extinction
+          pickone = sample(1:nm,1)
+          t_spe = ms[pickone]
+          t_ext = cbt + t.ext
+          times[h] = t_ext
+          rprob[h] = dexp(x = mint, rate = (s+nm*mu))*(mu0/(s+nm*mu0))
+          et[h] = 'extinction'
+          probs = probs[-extinctedone]
+          sprob[h] = prod(probs)*dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)*(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)
+          ms = ms[-pickone]
+          cwt = cwt - t.ext
+          cbt = cbt + t.ext
+          N = N-1
+          #print(paste('ext',sprob[h]))
+          #print(paste('probs',prod(probs),'trunc',dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu),'1-int',(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)))
+          #print(paste('INTEGRATETRUNCA',integrate(dtrunc,lower = 0, upper = (e.lims[extinctedone]-cbt),spec='exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)$value))
+          #print(paste('b',(e.lims[extinctedone]-cbt)))
+          h = h+1
+          nm = nm - 1
+          e.lims = e.lims[-extinctedone]
+         }
+      }
+      else{
+         key = 1
+         rprob[h] = pexp(q = cwt, rate = (s+nm*mu0),lower.tail = FALSE)
+         et[h] = 'nothing'
+         sprob[h] = 1 - integrate(sampprob,lower = 0, upper = cwt,s=s,mu=mu,r=ct-cbt)$value#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
+         #print(paste('nothing',sprob[h]))
+         times[h] = mint+cbt
+         h = h+1
+         dif1 = cwt
+         dif2 = (mint - cwt)
+         times[h] = mint
+      }
+    }
+
+return(list(et=et,times=times,dif1=dif1,dif2=dif2))
+}
+```
+
+
+```{r, sim1}
+time = proc.time()
+nsim=10000
+N = vector(mode='numeric',length = nsim)
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(Dt)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+}
+```
+
+```{r}
+qplot(N,geom='histogram',binwidth=1)
+tab = ftable(N)
+print(get.time(time))
+```
+
+```{r, echo=TRUE, results='asis'}
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```
+
+
+wait, how should look the first waiting time?
+
+```{r}
+N=1
+K=40
+lambda0=0.8
+mu0=0.1
+lambda = max(0,lambda0 - (lambda0-mu0)*N/K)
+t.spe = rexp(10000000,lambda)
+qplot(t.spe,geom='histogram')
+summary(t.spe)
+```
+
+now let´s do the same than before but
+
+```{r, sim2}
+time = proc.time()
+nsim=100000
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(15)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+}
+print(get.time(time))
+```
+
+
+
+```{r, echo=TRUE, results='asis'}
+qplot(N,geom='histogram',binwidth=1)
+tab = ftable(N)
+N2 = N
+N2[N2>0 & d2<d1] = N2[N2>0 & d2<d1] - 1
+qplot(N2,geom='histogram',binwidth=1)
+tab = ftable(N2)
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+hi = count(N2)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```

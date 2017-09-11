@@ -22,7 +22,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
   dif1 = vector(mode = 'numeric',length = dim)
   dif2 = vector(mode = 'numeric', length = dim)
   for(i in 1:dim){
-    rs = rs-1
+    rs = rs-1 # this are the remaning speciations
     cwt = wt[i]
     cbt = sum(wt[0:(i-1)])
     key = 0
@@ -43,7 +43,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
       else{
         t.spe = rexp(1,s)
       }
-      if(nm > 0){ # if there are missing species
+      if(nm > 0){ # if there are missing species simulate extinction times
         t.ext = vector(mode = 'numeric',length = nm)
         for(j in 1:nm){
           t.ext[j] = rtrunc(1,'exp',a=0,b=(e.lims[j]-cbt),rate=mu)
