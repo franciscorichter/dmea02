@@ -1,4 +1,4 @@
-llik.st = function(pars, setoftrees, impsam = F, correction=1){
+llik.st = function(pars, setoftrees, impsam = F, correction=0){
   m = length(setoftrees)
   l = vector(mode = 'numeric',length = m)
   w = vector(mode = 'numeric',length = m)
