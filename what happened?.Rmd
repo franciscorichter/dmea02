@@ -17,10 +17,6 @@ library(plyr)
 2. When that many things happened?
 ```{r}
 s <- sim.tree(seed=4,ct=7)
-plot(s$phylo,root.edge=T)
-plot(s$phylo.extant,root.edge=T)
-s$tree$wt
-s$tree.extant$wt
 ```
 
 now, let´s reconstruct the first segment...
@@ -45,12 +41,11 @@ h=1
 et = NULL
 rs = 6
 e.lims = NULL
-
+obswt = Dt
 while(key == 0){
       lambda = max(0,lambda0 - (lambda0-mu0)*N/K)
       mu = mu0
       lambda = rep(lambda,N)
-
       s = sum(lambda)
       t.spe = rexp(1,s)
       if(nm > 0){ # if there are missing species
@@ -90,6 +85,7 @@ while(key == 0){
             nm = nm + 1 # number of missing species
             e.lims = c(e.lims,ct)
             N = N+1
+            obswt = obswt - t.spe
           }
           cwt = cwt - t.spe
           cbt = cbt + t.spe
@@ -106,11 +102,8 @@ while(key == 0){
           ms = ms[-pickone]
           cwt = cwt - t.ext
           cbt = cbt + t.ext
+          obswt = obswt - t.ext
           N = N-1
-          #print(paste('ext',sprob[h]))
-          #print(paste('probs',prod(probs),'trunc',dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu),'1-int',(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)))
-          #print(paste('INTEGRATETRUNCA',integrate(dtrunc,lower = 0, upper = (e.lims[extinctedone]-cbt),spec='exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)$value))
-          #print(paste('b',(e.lims[extinctedone]-cbt)))
           h = h+1
           nm = nm - 1
           e.lims = e.lims[-extinctedone]
@@ -118,7 +111,7 @@ while(key == 0){
       }
       else{
          key = 1
-         rprob[h] = pexp(q = cwt, rate = (s+nm*mu0),lower.tail = FALSE)
+         rprob[h] = pexp(q = obswt, rate = (s+nm*mu0),lower.tail = FALSE)
          et[h] = 'nothing'
          sprob[h] = 1 - integrate(sampprob,lower = 0, upper = cwt,s=s,mu=mu,r=ct-cbt)$value#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
          #print(paste('nothing',sprob[h]))
@@ -129,8 +122,7 @@ while(key == 0){
          times[h] = mint
       }
     }
-
-return(list(et=et,times=times,dif1=dif1,dif2=dif2))
+return(list(et=et,times=times,dif1=dif1,dif2=dif2,rprob=rprob,sprob=sprob))
 }
 ```
 
@@ -197,7 +189,7 @@ print(get.time(time))
 qplot(N,geom='histogram',binwidth=1)
 tab = ftable(N)
 N2 = N
-N2[N2>0 & d2<d1] = N2[N2>0 & d2<d1] - 1
+N2[N2>0 & d1<d2] = N2[N2>0 & d1<d2] - 1
 qplot(N2,geom='histogram',binwidth=1)
 tab = ftable(N2)
 hi = count(N)
@@ -207,3 +199,257 @@ hi = count(N2)
 hi$p = (hi$freq/sum(hi$freq))*100
 knitr::kable(hi, format = "markdown",padding=0)
 ```
+
+
+a least extreame case
+
+```{r, sim3}
+time = proc.time()
+nsim=100000
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(1)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+}
+print(get.time(time))
+```
+
+
+
+```{r, echo=TRUE, results='asis'}
+qplot(N,geom='histogram',binwidth=1)
+tab = ftable(N)
+N2 = N
+N2[N2>0 & d1<d2] = N2[N2>0 & d1<d2] - 1
+qplot(N2,geom='histogram',binwidth=1)
+tab = ftable(N2)
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+hi = count(N2)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```
+
+
+```{r, sim4}
+time = proc.time()
+nsim=100000
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+rp = vector(mode='numeric',length = nsim)
+sp = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(2)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+  rp[i] = prod(sr$rprob)
+  sp[i] = prod(sr$sprob)
+}
+print(get.time(time))
+```
+
+
+
+```{r, echo=TRUE, results='asis'}
+qplot(N,geom='histogram',binwidth=1)
+tab = ftable(N)
+N2 = N
+N2[N2>0 & d1<d2] = N2[N2>0 & d1<d2] - 1
+qplot(N2,geom='histogram',binwidth=1)
+tab = ftable(N2)
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+hi = count(N2)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```
+
+
+```{r}
+qplot(N,rp)
+qplot(N,sp)
+summary(rp)
+summary(sp)
+```
+
+
+now again with the extreame case
+
+```{r, sim5}
+time = proc.time()
+nsim=100000
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+rp = vector(mode='numeric',length = nsim)
+sp = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(15)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+  rp[i] = prod(sr$rprob)
+  sp[i] = prod(sr$sprob)
+}
+print(get.time(time))
+```
+
+
+
+```{r, echo=TRUE, results='asis'}
+qplot(N,geom='histogram',binwidth=1)
+tab = ftable(N)
+N2 = N
+N2[N2>0 & d1<d2] = N2[N2>0 & d1<d2] - 1
+qplot(N2,geom='histogram',binwidth=1)
+tab = ftable(N2)
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+hi = count(N2)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```
+
+
+```{r}
+qplot(N,rp)
+qplot(N,sp)
+summary(rp)
+summary(sp)
+```
+
+
+
+```{r}
+qplot(N[N<17],rp[N<17])
+qplot(N[N<17],sp[N<17])
+
+
+```
+
+
+...
+
+
+```{r, sim6}
+time = proc.time()
+nsim=100000
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+rp = vector(mode='numeric',length = nsim)
+sp = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(10)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+  rp[i] = prod(sr$rprob)
+  sp[i] = prod(sr$sprob)
+}
+print(get.time(time))
+```
+
+
+
+```{r, echo=TRUE, results='asis'}
+qplot(N,geom='histogram',binwidth=1)
+N2 = N
+tab = ftable(N)
+N2[N2>0 & d1<d2] = N2[N2>0 & d1<d2] - 1
+qplot(N2,geom='histogram',binwidth=1)
+tab = ftable(N2)
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+hi = count(N2)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```
+
+
+```{r}
+qplot(N,sp)
+qplot(N,rp)
+summary(rp)
+summary(sp)
+qplot(N[N<12],rp[N<12])
+qplot(N[N<12],sp[N<12])
+pexp(10,0.7825,lower.tail = FALSE)
+```
+
+
+if is not the product?
+
+```{r, sim7}
+time = proc.time()
+nsim=1000
+N = vector(mode='numeric',length = nsim)
+d1 = vector(mode='numeric',length = nsim)
+d2 = vector(mode='numeric',length = nsim)
+rp = vector(mode='numeric',length = nsim)
+sp = vector(mode='numeric',length = nsim)
+rp2 = vector(mode='numeric',length = nsim)
+sp2 = vector(mode='numeric',length = nsim)
+rp3 = vector(mode='numeric',length = nsim)
+sp3 = vector(mode='numeric',length = nsim)
+for(i in 1:nsim){
+  sr = subrec(10)
+  N[i] = length(sr$et)-1
+  d1[i] = sr$dif1
+  d2[i] = sr$dif2
+  rp[i] = prod(sr$rprob)
+  sp[i] = prod(sr$sprob)
+  rp2[i] = mean(sr$rprob)
+  sp2[i] = mean(sr$sprob)
+  rp3[i] = min(sr$rprob)
+  sp3[i] = min(sr$sprob)
+}
+print(get.time(time))
+```
+
+
+
+```{r, echo=TRUE, results='asis'}
+qplot(N,geom='histogram',binwidth=1)
+tab = ftable(N)
+N2 = N
+N2[N2>0 & d1<d2] = N2[N2>0 & d1<d2] - 1
+qplot(N2,geom='histogram',binwidth=1)
+tab = ftable(N2)
+hi = count(N)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+hi = count(N2)
+hi$p = (hi$freq/sum(hi$freq))*100
+knitr::kable(hi, format = "markdown",padding=0)
+```
+
+
+```{r}
+qplot(N,rp)
+qplot(N,sp)
+summary(rp)
+summary(sp)
+qplot(N[N<12],rp[N<12])
+qplot(N[N<12],sp[N<12])
+pexp(10,0.7825,lower.tail = FALSE)
+```
+
+
+```{r}
+qplot(N,rp2)
+qplot(N,sp2)
+summary(rp2)
+summary(sp2)
+qplot(N,sp3)
+qplot(N,rp3)
+summary(rp3)
+summary(sp3)
+```
+

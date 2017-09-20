@@ -1,15 +1,15 @@
-llik.st = function(pars, setoftrees, impsam = F){
+llik.st = function(pars, setoftrees, impsam = F, correction=1){
   m = length(setoftrees)
   l = vector(mode = 'numeric',length = m)
+  w = vector(mode = 'numeric',length = m)
   for(i in 1:m){
     s = setoftrees[[i]]
-    if(impsam){
-      weight = s$weight
-      l[i] = llik(pars=pars,tree=s)*weight
-    }
-    else{
-      l[i] = llik(pars=pars,tree=s)
-    }
+    l[i] = llik(pars=pars,tree=s)+length(s$tree$wt)*correction
+    w[i] = s$weight
+  }
+  if(impsam){
+      weight = exp(w-correction*D)/max(exp(w-correction*D))
+      l = l*weight
   }
   L = sum(l)
   return(L)

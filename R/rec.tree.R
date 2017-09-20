@@ -1,4 +1,4 @@
-rec.tree <- function(tree,pars,model='dd',seed=0){
+rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
   if(seed>0) set.seed(seed)
   wt = tree$wt
   ct = sum(wt)
@@ -26,6 +26,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
     cwt = wt[i]
     cbt = sum(wt[0:(i-1)])
     key = 0
+    last='nothing'
     while(key == 0){
       if(model == "dd"){  # diversity-dependence model
         lambda = max(0,lambda0 - (lambda0-mu0)*N/K)
@@ -75,9 +76,6 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
             sp = sampprob(t = mint,s = s,mu = mu,r = ct-cbt)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
             sprob[h] = prod(probs)*sp
             et[h] = 'speciation'
-            #print(paste('spec',sprob[h]))
-            #print(paste('prod(probs)',prod(probs),'sampprob',sp))
-            #print(paste('sampprob',sampprob(t = mint,s = s,mu = mu,r = ct-cbt),'integrate',integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value))
             h = h + 1
             nm = nm + 1 # number of missing species
             if((N + rs-1) < limit){
@@ -88,7 +86,9 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
             }
             N = N+1
             #print(paste('at branching time',cbt+t.spe,'a missing species arises, resulting on',N,'current species, happening before the current waiting time',cwt))
+            last = 'speciation'
           }
+          else{last = 'nothing'}
           cwt = cwt - t.spe
           cbt = cbt + t.spe
         }
@@ -112,6 +112,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
           h = h+1
           nm = nm - 1
           e.lims = e.lims[-extinctedone]
+          last = 'extinction'
          }
       }
       else{
@@ -123,6 +124,12 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
          h = h+1
          dif1[i] = cwt/wt[i]
          dif2[i] = (mint - cwt)/wt[i]
+         if(adjustment & cwt<(mint - cwt) & last=='speciation'){ #Adjusting last speciation
+           ms = ms[-length(ms)]
+           e.lims = e.lims[-length(e.lims)]
+           nm = nm - 1
+           N = N-1
+         }
       }
     }
     N= N+1
@@ -132,7 +139,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0){
   tree$et = et
   #tree$weight = prod(rprob)/prod(sprob)
   logweight = log(rprob)-log(sprob)
-  tree$weight = sum(logweight) #logweight
+  tree$weight = sum(logweight)#+length(tree$wt)*log(sum(tree$wt)) #logweight
   tree$dif1 = dif1
   tree$dif2 = dif2
   return(tree)
