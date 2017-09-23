@@ -1,4 +1,4 @@
-MCEM.phylo <- function(tree, init_par, n_trees=10, n_it=30, printpar=TRUE, is=FALSE, tol=0.0001, parallel=F){
+MCEM.phylo <- function(tree, init_par, n_trees=10, n_it=30, printpar=TRUE, impsam=FALSE, tol=0.0001, parallel=F){
   print('MCEM computations initiated. This might take a while.')
   n_pars = length(init_par)
   pars = init_par
@@ -16,7 +16,7 @@ MCEM.phylo <- function(tree, init_par, n_trees=10, n_it=30, printpar=TRUE, is=FA
     }
     p = proc.time()
     trees <- sim.srt(tree=tree, pars=pars, n_trees=n_trees, parallel = parallel)
-    pars = mle.st(trees,is=is)
+    pars = mle.st(trees,impsam=impsam)
     Pars[(i+1),] = pars
     qt = get.time(time)
     q[i] = qt
