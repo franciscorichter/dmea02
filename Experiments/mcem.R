@@ -2,7 +2,12 @@ s = sim.tree(seed=104,mu0=0.4)
 cmle = mle.tree(s$tree)
 ddmle = as.numeric(DDD::dd_ML(branching.times(s$phylo.extant),initparsopt = c(0.8,0.4,40)))
 
-mcem1=MCEM.phylo(tree=s$tree.extant,init_par = c(2.5,0.9,90),impsam = TRUE,parallel = TRUE)
+mcem1=MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.09,90),impsam = TRUE,parallel = TRUE)
+mcem2=MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.09,90),impsam = TRUE,parallel = TRUE)
+mcem3=MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.09,90),impsam = TRUE,parallel = TRUE)
+mcem4=MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.09,90),impsam = TRUE,parallel = TRUE)
+mcem5=MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.09,90),impsam = TRUE,parallel = TRUE)
+
 
 
 mcemT = rbind(cbind(1:45,mcem1$pars[1:45,],'s1'),cbind(1:45,mcem2$pars[1:45,],'s2'),cbind(1:45,mcem3$pars[1:45,],'s3'),cbind(1:45,mcem4$pars[1:45,],'s4'),cbind(1:45,mcem5$pars[1:45,],'s5'),cbind(1:45,mcem6$pars[1:45,],'s6'),cbind(1:45,mcem7$pars[1:45,],'s7'),cbind(1:45,mcem8$pars[1:45,],'s8'),cbind(1:45,mcem9$pars[1:45,],'s9'))

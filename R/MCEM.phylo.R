@@ -1,7 +1,8 @@
-MCEM.phylo <- function(tree, init_par, maxNtree=1000, printpar=TRUE, impsam=FALSE, parallel=F){
+MCEM.phylo <- function(tree, init_par, maxNtree=1000, printpar=TRUE, impsam=FALSE, parallel=F, ips=20){
   print('MCEM computations initiated. This might take a while.')
   n_pars = length(init_par)
   pars = init_par
+  n_it = log(maxNtree)*ips
   Pars = matrix(nrow=(n_it+1),ncol=n_pars)
   i = 1
   qt = 0
@@ -22,7 +23,7 @@ MCEM.phylo <- function(tree, init_par, maxNtree=1000, printpar=TRUE, impsam=FALS
     qt = get.time(time)
     q[i] = qt
     i = i+1
-    if(i%%20 == 0){
+    if(i%%ips == 0){
       n_trees = n_trees*10
     }
   }
