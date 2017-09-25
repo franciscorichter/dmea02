@@ -10,7 +10,7 @@ llik.st = function(pars, setoftrees, impsam = F, correction=0){
     D[i] = length(s$wt)
   }
   if(impsam){
-      weight = exp(w-correction*D)/max(exp(w-correction*D))
+      weight = exp(w-correction*D)/sum(exp(w-correction*D))
       l = l*weight
   }
   L = sum(l)
