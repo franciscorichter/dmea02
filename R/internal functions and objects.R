@@ -62,9 +62,12 @@ sim.est <- function(n_trees, pars, init_par=c(1.8,0.13,60), seed=0, ct=15, paral
   return(data.frame(real=p, est=pars))
 }
 
-get.time <- function(time){
+get.time <- function(time,mode='sec'){
   dif = proc.time()-time
-  return(dif[3])
+  ti = as.numeric(dif[3])
+  if(mode == 'min')  ti = ti/60
+  if(mode == 'hou') ti = ti/3600
+  return(ti)
 }
 
 
