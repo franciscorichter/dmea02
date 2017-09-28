@@ -1,11 +1,11 @@
-s = sim.tree(seed=104,mu0=0.4)
+s = sim.tree(seed=104,mu0=0.1)
 cmle = mle.tree(s$tree)
 ddmle = as.numeric(DDD::dd_ML(branching.times(s$phylo.extant),initparsopt = c(0.8,0.4,40)))
 
 nem = 10
 MCEM = vector(mode='list',length=nem)
 for(i in 1:nem){
-  MCEM[i] = MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.09,90),impsam = TRUE,parallel = TRUE,ips = 100,maxNtree = 10)
+  MCEM[i] = MCEM.phylo(tree=s$tree.extant,init_par = c(0.5,0.05,90),impsam = TRUE,parallel = TRUE,ips = 100,cutTime = 10)
 }
 
 sss = c('s1','s2','s3','s4','s5','s6','s7','s8','s9','s10')

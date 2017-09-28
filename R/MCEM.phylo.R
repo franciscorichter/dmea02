@@ -24,7 +24,7 @@ MCEM.phylo <- function(tree, init_par, cutTime=10, printpar=TRUE, impsam=FALSE, 
     q[i] = qt
     i = i+1
     if(i%%ips == 0){
-      n_trees = floor(n_trees*1.2)
+      n_trees = floor(n_trees*1.1)
     }
   }
   Pars = Pars[1:i,]
