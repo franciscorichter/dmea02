@@ -89,3 +89,47 @@ pms2 <- function(t){
 missspec <- inverse(pms2, lower = 0, upper = 1)
 missspec(0.2)
 
+
+
+par_est_vis <- function(P,par,PR,true){
+  # P is the recost estim values
+  # par is the parameter you want to use
+  # PR is the real estim
+  if (par == 1){
+    int = true
+    parname = 'lambda'
+    bin = 0.02
+  }
+  if (par==2){
+    int= true
+    parname = 'mu'
+    bin = 0.02
+  }
+  if (par == 3){
+    int = true
+    parname = 'K'
+    n = dim(P)[1]
+    P1 = P[P[,3]<100 & PR[,3]<100,]
+    PR = PR[P[,3]<100 & PR[,3]<100,]
+    P = P1
+    n2 = dim(P)[1]
+    print(paste(1-n2/n,'proportion of data was excluded for vizualization purposes'))
+    bin = 2
+  }
+  if (par ==4){
+    int = 40
+    parname = 'K'
+    P = P[P[,4]<100,]
+  }
+  hist_top <- ggplot()+geom_histogram(aes(P[,par]),binwidth=bin) + geom_vline(xintercept=int) + xlab('MLE from incomplete tree')
+  empty <- ggplot()+geom_point(aes(1,1), colour="white")+
+    theme(axis.ticks=element_blank(),
+          panel.background=element_blank(),
+          axis.text.x=element_blank(), axis.text.y=element_blank(),
+          axis.title.x=element_blank(), axis.title.y=element_blank())
+
+  scatter <- ggplot()+geom_point(aes(P[,par], PR[,par]))+ geom_abline(intercept = 0, slope = 1) + ylab(TeX(paste('$\\hat{\\',parname,'}_{C}$',sep='')))+xlab(TeX(paste('$\\hat{\\',parname,'}_{I}$',sep='')))
+  hist_right <- ggplot()+geom_histogram(aes(PR[,par]),binwidth=bin)+coord_flip()+ geom_vline(xintercept=int) +xlab('MLE of complete tree')
+
+  grid.arrange(hist_top, empty, scatter, hist_right, ncol=2, nrow=2, widths=c(4, 1), heights=c(1, 4))
+}

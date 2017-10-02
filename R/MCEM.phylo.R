@@ -8,7 +8,7 @@ MCEM.phylo <- function(tree, init_par, cutTime=10, printpar=TRUE, impsam=FALSE, 
   qt = 0
   q = vector(mode='numeric',length = 1000)
   Pars[i,] = pars
-  n_trees=10
+  n_trees=50
   while(get.time(TIME,mode='min') < cutTime){
     time = proc.time()
     if(printpar){
@@ -24,7 +24,7 @@ MCEM.phylo <- function(tree, init_par, cutTime=10, printpar=TRUE, impsam=FALSE, 
     q[i] = qt
     i = i+1
     if(i%%ips == 0){
-      n_trees = floor(n_trees*1.1)
+      n_trees = 10000
     }
   }
   Pars = Pars[1:i,]
