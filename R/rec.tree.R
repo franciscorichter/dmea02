@@ -47,7 +47,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
       if(nm > 0){ # if there are missing species simulate extinction times
         t.ext = vector(mode = 'numeric',length = nm)
         for(j in 1:nm){
-          t.ext[j] = rtrunc(1,'exp',a=0,b=(e.lims[j]-cbt),rate=mu)
+          t.ext[j] = truncdist::rtrunc(1,'exp',a=0,b=(e.lims[j]-cbt),rate=mu)
         }
         extinctedone = which(t.ext == min(t.ext))
         t.ext = min(t.ext)
@@ -62,7 +62,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
       if(nm > 0){
         probs = vector(mode = 'numeric',length = nm)
         for(j in 1:nm){
-          probs[j] = 1-ptrunc(mint,'exp',a=0,b=(e.lims[j]-cbt),rate=mu)
+          probs[j] = 1-truncdist::ptrunc(mint,'exp',a=0,b=(e.lims[j]-cbt),rate=mu)
         }
       }
       else{probs = 1}
@@ -100,7 +100,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
           rprob[h] = dexp(x = mint, rate = (s+nm*mu))*(mu0/(s+nm*mu0))
           et[h] = 'extinction'
           probs = probs[-extinctedone]
-          sprob[h] = prod(probs)*dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)*(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)
+          sprob[h] = prod(probs)*truncdist::dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)*(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)
           ms = ms[-pickone]
           cwt = cwt - t.ext
           cbt = cbt + t.ext
