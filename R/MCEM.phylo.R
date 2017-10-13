@@ -1,4 +1,4 @@
-MCEM.phylo <- function(tree, init_par, cutTime=10, printpar=TRUE, impsam=FALSE, parallel=F, ips=20){
+MCEM.phylo <- function(tree, init_par, cutTime=10, printpar=TRUE, impsam=FALSE, parallel=F, ips=20,n_trees=50){
   print('MCEM computations initiated. This might take a while.')
   TIME = proc.time()
   n_pars = length(init_par)
@@ -8,7 +8,6 @@ MCEM.phylo <- function(tree, init_par, cutTime=10, printpar=TRUE, impsam=FALSE, 
   qt = 0
   q = vector(mode='numeric',length = 1000)
   Pars[i,] = pars
-  n_trees=50
   while(get.time(TIME,mode='min') < cutTime){
     time = proc.time()
     if(printpar){
