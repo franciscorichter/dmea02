@@ -133,3 +133,11 @@ par_est_vis <- function(P,par,PR,true){
 
   grid.arrange(hist_top, empty, scatter, hist_right, ncol=2, nrow=2, widths=c(4, 1), heights=c(1, 4))
 }
+
+
+count.missing <- function(st){
+  total = length(st$tree$wt)
+  extant = length(st$tree.extant$wt)
+  missing = (total - extant)/2
+  return(missing)
+}

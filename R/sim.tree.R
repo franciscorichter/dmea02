@@ -7,6 +7,7 @@ sim.tree <- function(ct=15, lambda0=0.8, mu0=0.1, K=40, model="dd", printEv=FALS
   while(key==0){
     i = 1
     N = 1 # Starting number of species
+    sigmas = NULL # vector with waiting times rates
     Tm = NULL # Waiting times
     E = NULL # vector with 0 if extinction and 1 if speciation
     n = NULL # vector with number of species at time t_i
@@ -28,6 +29,7 @@ sim.tree <- function(ct=15, lambda0=0.8, mu0=0.1, K=40, model="dd", printEv=FALS
         mu = rep(mu0,N)
       }
       s = sum(lambda)+sum(mu)
+      sigmas = c(sigmas,s)
       if (s == 0){break}
       tm = rexp(1,s)  # waiting time of iteration i
       if(tm+sumt>ct){break}
@@ -96,5 +98,5 @@ sim.tree <- function(ct=15, lambda0=0.8, mu0=0.1, K=40, model="dd", printEv=FALS
   newick.extant = drop.fossil(phy)
   newick.extant.p = phylo2vectors(newick.extant) # is it validated?
   reboot2 = reboot2 + reboot
-  return(list(tree=list(wt=Tm, E=E, n=n, S=S, br = cumsum(Tm)), phylo = phy, tree.extant = newick.extant.p, phylo.extant=newick.extant, r=reboot2, L=L)) #validate reboot 2
+  return(list(tree=list(wt=Tm, E=E, n=n, S=S, br = cumsum(Tm)), phylo = phy, tree.extant = newick.extant.p, phylo.extant=newick.extant, r=reboot2, L=L,sigmas=sigmas)) #validate reboot 2
 }
