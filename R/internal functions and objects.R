@@ -141,3 +141,16 @@ count.missing <- function(st){
   missing = (total - extant)/2
   return(missing)
 }
+
+
+cuttree <- function(tree,dim){
+  if(dim>length(tree$E)){
+    stop('dimension greater than tree, so no need to cut')
+  }
+  wt = tree$wt[1:(dim+1)]
+  E = tree$E[1:(dim)]
+  n = tree$n[1:(dim+1)]
+  newtree = list(wt=wt,E=E,n=n)
+  return(newtree)
+}
+

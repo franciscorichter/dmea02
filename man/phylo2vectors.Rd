@@ -48,7 +48,4 @@ s = sim.tree()
 all.equal(s$tree$wt,phylo2vectors(s$phylo)$wt)
 all.equal(s$tree$E,phylo2vectors(s$phylo)$E)
 all.equal(s$tree$n,phylo2vectors(s$phylo)$n)
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-%\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
-%\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line
+}
