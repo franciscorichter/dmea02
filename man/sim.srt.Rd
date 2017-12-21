@@ -1,7 +1,7 @@
 \name{sim.srt}
 \alias{sim.srt}
 Simulate a set of ...
-\title{
+\title{function...
 %%  ~~function to do ... ~~
 }
 \description{

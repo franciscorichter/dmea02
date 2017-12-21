@@ -105,10 +105,6 @@ rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
           cwt = cwt - t.ext
           cbt = cbt + t.ext
           N = N-1
-          #print(paste('ext',sprob[h]))
-          #print(paste('probs',prod(probs),'trunc',dtrunc(mint,'exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu),'1-int',(1-integrate(sampprob,lower = 0, upper = mint,s=s,mu=mu,r=ct-cbt)$value/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value)))
-          #print(paste('INTEGRATETRUNCA',integrate(dtrunc,lower = 0, upper = (e.lims[extinctedone]-cbt),spec='exp',a=0,b=(e.lims[extinctedone]-cbt),rate=mu)$value))
-          #print(paste('b',(e.lims[extinctedone]-cbt)))
           h = h+1
           nm = nm - 1
           e.lims = e.lims[-extinctedone]
@@ -119,7 +115,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
          key = 1
          rprob[h] = pexp(q = cwt, rate = (s+nm*mu0),lower.tail = FALSE)
          et[h] = 'nothing'
-         sprob[h] = 1 - integrate(sampprob,lower = 0, upper = cwt,s=s,mu=mu,r=ct-cbt)$value#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
+         sprob[h] = prod(probs)*(1 - integrate(sampprob,lower = 0, upper = cwt,s=s,mu=mu,r=ct-cbt)$value)#/integrate(sampprob,lower = 0, upper = ct-cbt,s=s,mu=mu,r=ct-cbt)$value
          #print(paste('nothing',sprob[h]))
          h = h+1
          dif1[i] = cwt/wt[i]
@@ -139,9 +135,7 @@ rec.tree <- function(tree,pars,model='dd',seed=0, adjustment=FALSE){
   tree$et = et
   #tree$weight = prod(rprob)/prod(sprob)
   logweight = log(rprob)-log(sprob)
-  tree$weight = sum(logweight)#+length(tree$wt)*log(sum(tree$wt)) #logweight
-  tree$dif1 = dif1
-  tree$dif2 = dif2
+  tree$logweight = sum(logweight)#+length(tree$wt)*log(sum(tree$wt)) #logweight
   return(tree)
 }
 
