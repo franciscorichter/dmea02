@@ -1,0 +1,116 @@
+---
+title: "Lighting experiment"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(subplex)
+```
+
+## S1. Simulate lighting data
+
+
+
+```{r cars}
+sim.light <- function(T,lambda=0.8,p=0.9){
+  wt = NULL
+  tau = NULL
+  obs = NULL
+  ot=0
+  i = 1
+  j=1
+  while(sum(wt)<T){
+   wt[i] = rexp(1,rate = lambda)
+   tau[i] = rbinom(1,1,prob=p)
+   ot = ot+wt[i]
+   if(tau[i]==1){
+     obs[j] = ot
+     ot = 0
+     j=j+1
+   }
+   i=i+1
+  }
+  d = length(wt)
+  wt = wt[-d]
+  tau = tau[-d]
+  #wt[d] = T-sum(wt)
+  return(list(wt=wt,tau=tau,obs=obs))
+}
+
+
+l1 = sim.light(50,p=0.5)
+l1
+```
+
+### S.1.1 Calculate MLE
+
+
+```{r}
+llik.light <- function(light,par){
+  lambda = par[1]
+  p = par[2]
+  exp = dexp(x=light$wt,rate=lambda,log=T)
+  bin = dbinom(x=sum(light$tau),size=length(light$tau),prob=p,log=TRUE)
+  llik = sum(exp)+bin
+  if(p>1 | p<0){
+    llik = -Inf
+  }
+  return(llik)
+}
+mle.light <- function(light,init_par = c(2,1)){
+  p = sum(light$tau)/length(light$tau)
+  lambda = 1/mean(light$wt)
+  #optim(par=c(0.5,0.5),fn=llik.light,lower=c(0,0),light=light, upper = c(5,1),method="L-BFGS-B")
+  return(list(lambda=lambda,p=p))
+}
+l1
+mle.light(l1,init_par=c(1,0.5))
+
+n=100
+L = vector(mode='numeric',length = n)
+P = vector(mode='numeric',length = n)
+for(i in 1:n){
+  li = sim.light(T=50)
+  ml = mle.light(light = li)
+  L[i] = ml$lambda
+  P[i] = ml$p
+}
+
+summary(L)
+summary(P)
+```
+## Incomplete data
+
+
+
+### Option 1. The current way
+```{r}
+rec.light <- function(obslight,lambda,p){
+  dt = obslight
+  for(i in 1:length(dt)){
+    t = dt[i]
+    
+  }
+}
+```
+
+
+
+### Option 2. topoloy first
+```{r}
+sim.miss.light <- function(obslight,lambda,p){
+  dt = obslight
+  j = 1
+  for(i in 1:length(dt)){
+    
+    to = m = 0
+    while(to == 0){
+      to = rbinom(1,1,p)
+      top[j] = to
+      j = j+1
+      if(to == 0) m <- m+1
+    }
+    
+  }
+}

@@ -6,7 +6,7 @@ llik.st = function(pars, setoftrees, impsam = F, correction=0){
   for(i in 1:m){
     s = setoftrees[[i]]
     l[i] = llik(pars=pars,tree=s)+length(s$tree$wt)*correction
-    w[i] = s$logweight
+    if(impsam) w[i] = s$logweight
     #D[i] = length(s$wt)
   }
   if(impsam){
