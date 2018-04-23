@@ -1,0 +1,550 @@
+---
+title: "lightnings segments experiment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+library(ggplot2)
+```
+
+
+## First we create the functions we are going to use
+
+```{r}
+#simulate segments, the output are waiting times, topology and observed waiting times
+sim.seg <- function(lambda,p,n=1){
+  to = NULL
+  t = NULL
+  obs = NULL
+  for(i in 1:n){
+    to1=0
+    while(to1 == 0){
+      to1 = rbinom(1,1,p)
+      to = c(to,to1)
+      t = c(t,rexp(1,lambda))
+    }
+    obs = c(obs,sum(t)-sum(obs))
+  }
+  return(list(t=t,to=to,obs=obs))
+}
+
+# simulate missing data given the observed segment
+rec.seg <- function(obs,lambda,p){
+  to=NULL
+  t=NULL
+  for(i in 1:length(obs)){
+    Dt = obs[i]
+    n = rpois(1,(1-p)*lambda*Dt)
+    it = sort(runif(n,min=0,max=Dt)) #inter-arrival times
+    t = c(t,diff(c(0,it,Dt)))
+    to = c(to,rep(0,times=n),1)
+  }
+  return(list(t=t,to=to))
+}
+
+#calculate the mle for a set of segments
+mle.ss <- function(S){
+  m = length(S)
+  n = vector(mode='numeric',length = m)
+  d = vector(mode='numeric',length = m)
+  dt = vector(mode='numeric',length = m)
+  for(i in 1:m){
+    rec = S[[i]]
+    d[i] = length(rec$t)
+    n[i] = sum(rec$to)
+    dt[i] = sum(rec$t)
+  }
+  lambda.mle = sum(d)/sum(dt)
+  p.mle = sum(n)/sum(d)
+  return(list(lambda.mle=lambda.mle,p.mle=p.mle))
+}
+
+# monte-carlo sampling of size m
+sim.srs <- function(Dt,lambda,p,m){ 
+  Rec = vector(mode = 'list',length = m)
+  d = vector(mode='numeric',length = m)
+  dt = vector(mode='numeric',length = m)
+  for(j in 1:m){
+    rec=rec.seg(Dt,lambda,p)
+    Rec[[j]] = rec
+  }
+  return(Rec)
+}
+
+
+
+```
+
+
+## After that we can do some examples
+### Exercises 1. a random segment
+
+```{r}
+lambda = 0.8
+p = 0.5
+#create random segment
+seg = sim.seg(lambda = 0.8,p = 0.5)
+#segment
+seg 
+#observed
+Dt = seg$obs
+m=10000
+# monte-carlo sampling
+R = sim.srs(Dt,lambda,p,m)
+# mle
+mle.ss(R)
+
+# now with more segments
+seg = sim.seg(lambda = 0.8,p = 0.5,n=25)
+Dt=seg$obs
+srs = sim.srs(Dt,lambda,p,m)
+mle.ss(srs)
+
+```
+
+
+
+## Exercises 2. How good is the last iteration of MCEM
+### To perform this expetiment we run the following rutine l times
+1. simulate tree and get observed data
+2. MC sampling for the missing part
+3. estimate MLE and store
+
+```{r, ex0001s}
+time = proc.time()
+l=100
+L=vector(mode = 'numeric',length=l)
+P=vector(mode = 'numeric',length=l)
+lambda=0.8
+p=0.8
+m=100
+for(k in 1:l){
+  seg = sim.seg(lambda = lambda, p = p,n=40)
+  Dt = seg$obs
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = mle$lambda.mle
+  P[k] = mle$p.mle
+}
+print(proc.time()-time)
+summary(L)
+summary(P)
+
+```
+
+Quite accurate estimations, now let´s observe another with a lot of missing data
+
+```{r, ex001s}
+time = proc.time()
+l=100
+L=vector(mode = 'numeric',length=l)
+P=vector(mode = 'numeric',length=l)
+lambda=0.8
+p=0.01
+m=100
+for(k in 1:l){
+  seg = sim.seg(lambda = lambda, p = p,n=40)
+  Dt = seg$obs
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = mle$lambda.mle
+  P[k] = mle$p.mle
+}
+print(proc.time()-time)
+summary(L)
+summary(P)
+```
+
+
+In general they are not biased and accurate. We can change the mc sampling size $m$, the length of the tree $n$ or the parameters, but they are more or less working fine. Now let´s see how the MCEM works. 
+
+
+# MCEM 
+
+
+
+```{r}
+mcem.light <- function(Dt,lambda,p,nit=100){
+  m=2
+  L=vector(mode = 'numeric',length=l)
+  P=vector(mode = 'numeric',length=l)
+  for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = lambda = mle$lambda.mle
+  P[k] = p = mle$p.mle
+  m=m+1
+  }
+  return(list(L=L,P=P))
+}
+```
+
+
+From now onwards I perform several MCEM routines to observe how is working with different input parameters. 
+
+
+```{r, mcem1}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.5
+seg = sim.seg(lambda = lambda, p = p,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem2}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.5
+#seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem3}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.5
+#seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem4}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.5
+#seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem5}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.5
+#seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem6}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.1
+seg = sim.seg(lambda = lambda, p = p,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem7}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.1
+#seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem8}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.9
+seg = sim.seg(lambda = lambda, p = p,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+
+```{r, mcem9}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.5
+#seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+```{r, mcem10}
+time = proc.time()
+l=300
+lambda=0.8
+p=0.99
+seg = sim.seg(lambda = 0.8, p = 0.5,n=50)
+Dt = seg$obs
+mcem = mcem.light(Dt,lambda,p,m)
+print(proc.time()-time)
+
+qplot(1:l,mcem$L) + geom_hline(yintercept = lambda)
+qplot(1:l,mcem$P) +  geom_hline(yintercept = p)
+
+
+```
+
+```{r, extra}
+m=100
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = lambda = mle$lambda.mle
+  P[k] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.5)
+P*L
+length(Dt)/sum(Dt)
+```
+
+```{r, extra2}
+m=10
+lambda=1.2
+p=0.1
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = lambda = mle$lambda.mle
+  P[k] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.5)
+P*L
+length(Dt)/sum(Dt)
+```
+
+```{r}
+time = proc.time()
+l=100
+L=vector(mode = 'numeric',length=l)
+P=vector(mode = 'numeric',length=l)
+lambda=0.8
+p=0.5
+m=10
+seg = sim.seg(lambda = 0.8, p = 0.5,n=100)
+Dt = seg$obs
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = lambda = mle$lambda.mle
+  P[k] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.5)
+qplot(1:length(P),P*L) +  geom_hline(yintercept = 0.5*0.8)
+
+
+```
+
+```{r}
+time = proc.time()
+l=100
+L=vector(mode = 'numeric',length=l)
+P=vector(mode = 'numeric',length=l)
+lambda=0.8
+p=0.5
+m=10
+seg = sim.seg(lambda = 0.8, p = 0.5,n=100)
+Dt = seg$obs
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = lambda = mle$lambda.mle
+  P[k] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.5)
+qplot(1:length(P),P*L) +  geom_hline(yintercept = 0.5*0.8)
+
+
+```
+
+
+
+```{r}
+time = proc.time()
+l=100
+L=vector(mode = 'numeric',length=l)
+P=vector(mode = 'numeric',length=l)
+lambda=0.8
+p=0.5
+m=100
+seg = sim.seg(lambda = 0.8, p = 0.5,n=100)
+Dt = seg$obs
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k] = lambda = mle$lambda.mle
+  P[k] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.5)
+qplot(1:length(P),P*L) +  geom_hline(yintercept = 0.5*0.8)
+
+
+```
+
+
+
+```{r}
+time = proc.time()
+l=1000
+L=vector(mode = 'numeric',length=(l+1))
+P=vector(mode = 'numeric',length=(l+1))
+L[1] = lambda=0.8
+P[1] = p = 0.5
+m=10
+seg = sim.seg(lambda = 0.8, p = 0.1,n=100)
+Dt = seg$obs
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k+1] = lambda = mle$lambda.mle
+  P[k+1] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.1)
+qplot(1:length(P),P*L) +  geom_hline(yintercept = 0.1*0.8)
+qplot(1:(length(P)-1),diff(L)) 
+
+```
+
+
+```{r}
+time = proc.time()
+l=100
+L=vector(mode = 'numeric',length=(l+1))
+P=vector(mode = 'numeric',length=(l+1))
+L[1] = lambda=0.8
+P[1] = p = 0.5
+m=100
+seg = sim.seg(lambda = 0.8, p = 0.1,n=100)
+Dt = seg$obs
+for(k in 1:l){
+  srs = sim.srs(Dt,lambda,p,m)
+  mle=mle.ss(srs)
+  L[k+1] = lambda = mle$lambda.mle
+  P[k+1] = p = mle$p.mle
+}
+print(proc.time()-time)
+
+qplot(1:length(P),L) + geom_hline(yintercept = 0.8)
+qplot(1:length(P),P) +  geom_hline(yintercept = 0.1)
+qplot(1:length(P),P*L) +  geom_hline(yintercept = 0.1*0.8)
+qplot(1:(length(P)-1),diff(L)) 
+
+```
+
+
+### NHPP 
+
+
+```{r}
+# NHPP
+nhpp.missing <- function(pars,ct=15){
+  lambda_0 = pars[1]
+  mu_0 = pars[2]
+  t_max     <- ct
+  t         <- 0
+  s         <- 0
+  lambda <- function(t) lambda_0*(1-exp(-mu_0*(ct-t)))
+  Lambda <- function(tupper) integrate(f = lambda, lower = 0, upper = tupper)$value
+  Lambda_inv <- function(s){
+    v <- seq(0,t_max+3, length.out = 1000)
+    min(v[Vectorize(Lambda)(v)>=s])
+  }
+  X <- numeric(0)
+  while(t <= t_max){
+    u <- rexp(1)
+    s <- s + u
+    if(s > Lambda(ct)) break
+    t <- Lambda_inv(s)
+    X <- c( X, t)
+  }
+return(X)
+}
+```
+
+
+

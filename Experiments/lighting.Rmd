@@ -102,6 +102,10 @@ rec.light <- function(obslight,lambda,p){
 sim.miss.light <- function(obslight,lambda,p){
   dt = obslight
   j = 1
+  wt = NULL
+  top = NULL
+  error = NULL
+  timesuggestion = NULL
   for(i in 1:length(dt)){
     
     to = m = 0
@@ -111,6 +115,125 @@ sim.miss.light <- function(obslight,lambda,p){
       j = j+1
       if(to == 0) m <- m+1
     }
-    
+    exps = rexp(n=m+1,rate=lambda)
+    swt = sum(exps)
+    error[i] = abs(obslight[i]-swt)/(m+1)
+    timesuggestion[i] = obslight[i]<swt
+    wt = c(wt,exps)
   }
+  light = list(wt=wt,tau=top,obs=obslight,error=error,errorsum=summary(error),timesuggestion=timesuggestion)
+  return(light)
 }
+
+
+s = sim.light(50,p=0.5)
+s
+rec = sim.miss.light(obslight = s$obs,lambda=0.8,p=0.5)
+rec
+n=10000
+min = vector(mode='numeric',length=n)
+max = vector(mode='numeric',length=n) 
+med = vector(mode='numeric',length=n)  
+lambda = vector(mode='numeric',length=n)  
+p = vector(mode='numeric',length=n)  
+for(i in 1:n){
+  rec = sim.miss.light(obslight = s$obs,lambda=0.8,p=0.5)
+  min[i] = rec$errorsum[1]
+  med[i] = rec$errorsum[3]
+  max[i] = rec$errorsum[6]
+  mle = mle.light(light = rec)
+  lambda[i] = mle$lambda
+  p[i] = mle$p
+}
+library(ggplot2)
+qplot(med,geom='histogram',binwidth=0.1)
+summary(lambda)
+summary(p)
+
+
+###
+
+
+n=10000
+min = vector(mode='numeric',length=n)
+max = vector(mode='numeric',length=n) 
+med = vector(mode='numeric',length=n)  
+lambda = vector(mode='numeric',length=n)  
+p = vector(mode='numeric',length=n)  
+for(i in 1:n){
+  rec = sim.miss.light(obslight = s$obs,lambda=0.4,p=0.5)
+  min[i] = rec$errorsum[1]
+  med[i] = rec$errorsum[3]
+  max[i] = rec$errorsum[6]
+  mle = mle.light(light = rec)
+  lambda[i] = mle$lambda
+  p[i] = mle$p
+}
+library(ggplot2)
+qplot(med,geom='histogram',binwidth=0.1)
+summary(lambda)
+summary(p)
+
+
+
+###
+
+
+n=10000
+min = vector(mode='numeric',length=n)
+max = vector(mode='numeric',length=n) 
+med = vector(mode='numeric',length=n)  
+lambda = vector(mode='numeric',length=n)  
+p = vector(mode='numeric',length=n)  
+for(i in 1:n){
+  rec = sim.miss.light(obslight = s$obs,lambda=0.8,p=0.2)
+  min[i] = rec$errorsum[1]
+  med[i] = rec$errorsum[3]
+  max[i] = rec$errorsum[6]
+  mle = mle.light(light = rec)
+  lambda[i] = mle$lambda
+  p[i] = mle$p
+}
+library(ggplot2)
+qplot(med,geom='histogram',binwidth=0.1)
+summary(lambda)
+summary(p)
+
+```
+
+
+### Option 3. Times first
+
+```{r,eval=FALSE}
+sim.miss.light <- function(obslight,lambda,p){
+  dt = obslight
+  j = 1
+  wt = NULL
+  top = NULL
+  error = NULL
+  for(i in 1:length(dt)){
+    
+    to = m = 0
+    while(sum(exp)<dt[i]){
+      to = rexp
+      top[j] = to
+      j = j+1
+      if(to == 0) m <- m+1
+    }
+    exps = rexp(n=m+1,rate=lambda)
+    swt = sum(exps)
+    error[i] = abs(obslight[i]-swt)/(m+1)
+    timesuggestion[i] = obslight[i]<swt
+    wt = c(wt,exps)
+  }
+  light = list(wt=wt,tau=top,obs=obslight,error=error,errorsum=summary(error),timesuggestion=timesuggestion)
+  return(light)
+}
+
+
+s = sim.light(50,p=0.5)
+s
+rec = sim.miss.light(obslight = s$obs,lambda=0.8,p=0.5)
+rec
+```
+

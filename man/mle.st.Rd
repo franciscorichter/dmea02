@@ -54,6 +54,15 @@ for(i in 1:n){
 }
 mle.st(S)
 }
+
+#or 
+
+time = proc.time()
+s = sim.tree(seed=1)
+p = mle.tree(s$tree)
+st = sim.srt(tree=s$tree.extant,pars=p,parallel=T,n_trees = 100000)
+mle.st(st = st, impsam = TRUE)
+get.time(time)
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 %\keyword{ ~kwd1 }% use one of  RShowDoc("KEYWORDS")
